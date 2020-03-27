@@ -25,6 +25,8 @@ gem 'rack-cors'
 
 gem 'mongoid', '~> 7.0.5'
 gem "active_model_serializers", "~> 0.10.0"
+gem 'webpacker'
+gem 'bson_ext', '~> 1.5.1'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
