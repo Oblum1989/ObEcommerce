@@ -12,4 +12,11 @@ FactoryBot.define do
     }
     user
   end
+
+  factory :published_post, class: 'Post' do
+    title { Faker::Lorem.sentence(word_count: 3) }
+    content { Faker::Lorem.paragraph }
+    published { true }
+    user
+  end
 end
