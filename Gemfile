@@ -46,6 +46,8 @@ end
 group :test do
   # ..rest of the gems in this block
   gem "shoulda-matchers"
+  gem 'database_cleaner-mongo'
+  gem 'database_cleaner-mongoid'
 end
 
 
