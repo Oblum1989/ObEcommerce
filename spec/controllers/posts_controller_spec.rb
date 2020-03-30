@@ -79,12 +79,14 @@ RSpec.describe "Posts", type: :request do
   end
 
   describe "GET /posts/{id}" do
-    let!(:post) { create(:post) } 
+    let!(:post) { create(:post, published: true) } 
 
     it 'should return a post' do
       get "/posts/#{post.id}"
+
       payload = JSON.parse(response.body)
       expect(payload).to_not be_empty
+
       expect(payload["id"]).to eq(post.id.to_s)
       expect(response).to have_http_status(200)
     end
@@ -109,74 +111,76 @@ RSpec.describe "Posts", type: :request do
           it { is_expected.to have_http_status(:created) } 
         end
       end
-        
-        # req_payload = {
-        #   post: {
-        #     title: "title",
-        #     content: "content",
-        #     published: true,
-        #     user_id: user.id
-        #   }
-        # }
-        # post "/posts", params: req_payload
-        
-        # payload = JSON.parse(response.body)
-        # expect(payload).to_not be_empty
-        # expect(payload["id"]).to_not be_nil
-        # expect(response).to have_http_status(:created)
-    end
 
-    it 'return error message on invalid post' do
-      req_payload = {
-        post: {
-          body: "content",
-          published: false,
-          user_id: user.id
-        }
-      }
-      post "/posts", params: req_payload
-      
-      payload = JSON.parse(response.body)
-      expect(payload).to_not be_empty
-      expect(response).to have_http_status(:unprocessable_entity)
+      context "without auth" do
+        before { post "/posts",params: create_params}
+
+        context "payload" do
+          subject { payloader } 
+          it { is_expected.to include(:error) } 
+        end
+        context "response" do
+          subject { response } 
+          it { is_expected.to have_http_status(:unauthorized) } 
+        end
+      end
     end
     
   end
   
   describe "PUT /posts/{id}" do
-    let!(:article) { create(:post) } 
-
-    it 'should update a post' do
-      req_payload = {
-        post: {
-          title: "title",
-          body: "content",
-          published: false,
-        }
-      }
-      put "/posts/#{article.id}", params: req_payload
-      
-      payload = JSON.parse(response.body)
-      expect(payload).to_not be_empty
-      expect(payload["id"]).to eq(article.id.to_s)
-      expect(response).to have_http_status(:ok)
-    end
-
-    it 'return error message on invalid post' do
-      req_payload = {
-        post: {
-          title: nil,
-          body: nil,
-          published: false,
-        }
-      }
-      put "/posts/#{article.id}", params: req_payload
-      
-      payload = JSON.parse(response.body)
-      expect(payload).to_not be_empty
-      expect(response).to have_http_status(:unprocessable_entity)
-    end
+    let!(:user) { create(:user) }
+    let!(:other_user) { create(:user) }
+    let!(:user_post) { create(:post, user_id: user.id) } 
+    let!(:other_user_post) { create(:post, user_id: other_user.id, published: true) } 
+    let!(:auth_headers) { { 'Authorization' => "Bearer #{user.auth_token}"} } 
+    let!(:other_auth_headers) { { 'Authorization' => "Bearer #{other_user.auth_token}"} } 
+    let!(:update_params) { {"post" => {"title" => "title", "content" => "content", "published" => true} } } 
     
+    context 'should update a post' do
+      context "with valid auth" do
+        context "when updating user's post" do
+          before { put "/posts/#{user_post.id}",params: update_params, headers: auth_headers}
+          
+          context "payload" do
+            subject { payloader } 
+            it { is_expected.to include(:id, :title, :content, :published, :author) } 
+            it { expect(payloader[:id]).to eq(user_post.id.to_s) } 
+          end
+          context "response" do
+            subject { response } 
+            it { is_expected.to have_http_status(:ok) } 
+          end
+        end
+        
+        # context "when updating other user's post" do
+        #   before { put "/posts/#{other_user_post.id}",params: update_params, headers: auth_headers}
+          
+        #   context "payload" do
+        #     subject { payloader } 
+        #     it { is_expected.to include(:error) } 
+        #   end
+        #   context "response" do
+        #     subject { response } 
+        #     it { is_expected.to have_http_status(:not_found) } 
+        #   end
+        # end
+      end
+
+      context "without auth" do
+        before { put "/posts/#{user_post.id}",params: update_params}
+
+        context "payload" do
+          subject { payloader } 
+          it { is_expected.to include(:error) } 
+        end
+        context "response" do
+          subject { response } 
+          it { is_expected.to have_http_status(:unauthorized) } 
+        end
+      end
+    end
+
   end
 
   private
