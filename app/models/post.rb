@@ -9,4 +9,5 @@ class Post
 
   validates :title, :content, presence: true
   validates :published, inclusion: { in: [true, false]}
+
 end

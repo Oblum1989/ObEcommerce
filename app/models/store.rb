@@ -16,4 +16,11 @@ class Store
 
   validates :name, :description, :link, :address, :contact_phones, :email, presence: true
   validates :active, inclusion: { in: [true, false]}
+
+  # Scopes
+  scope :published, -> { where(active: true) }
+
+  # default_scope
+  default_scope ->{ where(is_destroyed: false) }
+
 end
